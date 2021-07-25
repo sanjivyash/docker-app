@@ -20,3 +20,4 @@ def signup(user: User):
         )
 
     usercoll.insert_one(dict(user))
+  return user
