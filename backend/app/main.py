@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-import users.urls
+import routers
 
 app = FastAPI()
 
@@ -11,4 +11,5 @@ def index():
 def about():
   return { "backend-dev": "me" }
 
-app.include_router(users.urls.router)
+app.include_router(routers.user.router)
+app.include_router(routers.check.router)
