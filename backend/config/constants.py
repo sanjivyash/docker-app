@@ -13,7 +13,7 @@ dbname = os.getenv("DBNAME")
 secret = os.getenv("JWT_SECRET")
 expiry = float(os.getenv("EXPIRY_TIME"))
 
-##### SYSTEM ENV #########
+##### LOCAL ENV #########
 # host = "127.0.0.1"
 # port = 8000
 # reload = True
@@ -24,4 +24,4 @@ expiry = float(os.getenv("EXPIRY_TIME"))
 # dbname = "movies"
 
 # secret = "secret"
-# expiry = 60
+# expiry = 6000

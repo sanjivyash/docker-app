@@ -1,6 +1,6 @@
 import time
 from hashlib import blake2b
-from fastapi import APIRouter, status, HTTPException, Header
+from fastapi import APIRouter, status, HTTPException
 from typing import Dict
 from pymongo import MongoClient
 import jwt
@@ -14,7 +14,7 @@ router = APIRouter(
   )
 
 
-@router.post("/signup", response_model=user.UserDisplay)
+@router.post("/signup", response_model=user.UserDisplay, status_code=201)
 def signup(person: user.User):
   with MongoClient(constants.uri) as client:
     usercoll = client[constants.dbname]["users"]
@@ -40,7 +40,7 @@ def login(person: user.UserAuth):
       raise HTTPException(
           status_code=status.HTTP_401_UNAUTHORIZED,
           detail={ "error" : f'Invalid Credentials' }
-      )
+        )
 
     token = jwt.encode({ "_id": str(document["_id"]), "time": time.time() }, constants.secret, algorithm="HS256")
     document["tokens"][token] = time.time()
@@ -51,5 +51,4 @@ def login(person: user.UserAuth):
         del document["tokens"][token] 
 
     usercoll.replace_one({ "_id": document["_id"]}, document)
-
-  return { "auth-token": token }
+  return { "x-auth-token": token }
