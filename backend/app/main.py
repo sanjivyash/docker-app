@@ -31,3 +31,4 @@ def about():
 
 app.include_router(routers.user.router)
 app.include_router(routers.connection.router)
+app.include_router(routers.check.router)

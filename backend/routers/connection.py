@@ -43,7 +43,6 @@ async def create_room(websocket: WebSocket, id: str, person: user.User=Depends(a
 @router.websocket("/ws/join/{id}")
 async def join_room(websocket: WebSocket, id: str, person: user.User=Depends(auth.authenticate)):
   if id not in managers:
-    print("ID LOST")
     await websocket.close(code=1002)
     return
 
@@ -54,10 +53,8 @@ async def join_room(websocket: WebSocket, id: str, person: user.User=Depends(aut
     while True:
       if websocket.state.active:
         data = await websocket.receive_text()
-        print(data.strip())
         await room.multicast(data, person.username)
   except WebSocketDisconnect:
-    print("DISCONNECT ERROR")
     await room.disconnect(person.username, websocket)
   except AssertionError:
-    print("ASSERTION ERROR")
+    pass

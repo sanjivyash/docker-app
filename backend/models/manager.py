@@ -12,7 +12,7 @@ class Action(str, Enum):
 
 class Event(BaseModel):
   action: Action
-  load: str
+  load: Dict[str, Union[int, str]]
 
 
 class ConnectionManager():
@@ -27,7 +27,7 @@ class ConnectionManager():
     self.owner = owner
 
   def __repr__(self):
-    return f'id: {self.id}\n token: {self.token}\n owner: {self.owner}'
+    return f'id: {self.id}\n owner: {self.owner}'
 
   async def connect(self, username: str, websocket: WebSocket):
     if username in self.members:
@@ -37,6 +37,7 @@ class ConnectionManager():
     
     await websocket.accept()
     websocket.state.active = True
+    await self.broadcast(f'{username} has joined the watch party')
     self.members[username] = websocket
 
   async def disconnect(self, username: str, websocket: WebSocket):

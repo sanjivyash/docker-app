@@ -2,11 +2,13 @@ import time
 from hashlib import blake2b
 from fastapi import APIRouter, status, HTTPException
 from typing import Dict
+from fastapi.params import Depends
 from pymongo import MongoClient
 import jwt
 
 from models import user
 from config import constants
+from middleware import auth
 
 router = APIRouter(
     prefix="/users",
@@ -22,7 +24,7 @@ def signup(person: user.User):
     if usercoll.find_one({ "username": person.username }) is not None:
       raise HTTPException(
           status_code=status.HTTP_400_BAD_REQUEST,
-          detail={ "error" : f'Username {person.username} is already in use' }
+          detail=f'Username {person.username} is already in use'
         )
 
     person.hash()
@@ -39,7 +41,7 @@ def login(person: user.UserAuth):
     if document is None or blake2b(person.password.encode()).hexdigest() != document["password"]:
       raise HTTPException(
           status_code=status.HTTP_401_UNAUTHORIZED,
-          detail={ "error" : f'Invalid Credentials' }
+          detail=f'Invalid Credentials'
         )
 
     token = jwt.encode({ "_id": str(document["_id"]), "time": time.time() }, constants.secret, algorithm="HS256")
@@ -52,3 +54,12 @@ def login(person: user.UserAuth):
 
     usercoll.replace_one({ "_id": document["_id"]}, document)
   return { "x-auth-token": token }
+
+
+@router.delete("/delete", response_model=user.UserDisplay)
+def remove(person: user.User=Depends(auth.authenticate)):
+  with MongoClient(constants.uri) as client:
+    usercoll = client[constants.dbname]["users"]
+    usercoll.find_one_and_delete({ "username": person.username })
+  
+  return person

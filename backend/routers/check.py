@@ -1,8 +1,6 @@
-from fastapi import APIRouter, status, HTTPException, Header, Depends
-from pymongo import MongoClient
+from fastapi import APIRouter, Depends
 
-from models import user
-from config import constants
+from models import user, manager
 from middleware import auth
 
 router = APIRouter(
@@ -10,7 +8,7 @@ router = APIRouter(
     tags=["auth"]
   )
 
-@router.post("/check", response_model=user.UserDisplay)
-def check_sensitive(inpuser: user.UserAuth, person: user.User = Depends(auth.authenticate)):
-  assert(inpuser.username == person.username)
-  return person
+@router.post("/check", response_model=manager.Event)
+def check_sensitive(event: manager.Event, person: user.User = Depends(auth.authenticate)):
+  event.action = manager.Action.resume
+  return event
