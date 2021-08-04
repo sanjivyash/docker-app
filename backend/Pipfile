@@ -5,7 +5,9 @@ name = "pypi"
 
 [packages]
 fastapi = "*"
-uvicorn = {extras = ["standard"], version = "*"}
+uvicorn = "*"
+websockets = "*"
+requests = "*"
 pymongo = "*"
 pyjwt = "*"
 
