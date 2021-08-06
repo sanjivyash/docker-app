@@ -93,6 +93,7 @@ class Test:
   def delete(self):
     title = formatter("Test 5", "header", "bold")
     status_err = formatter("incorrect response code", "error")
+    delete_err = formatter("user not deleted", "error")
     response_err = formatter("incorrect response body", "error")
     
     print(f'{title} Deleting a user')
@@ -104,7 +105,7 @@ class Test:
       assert response.status_code == 200, status_err
       assert response.json() == output, response_err
       response = self.client.post(url="/users/login", json=input)
-      assert response.status_code == 401, formatter("user not deleted", "error")
+      assert response.status_code == 401, delete_err
       print(formatter("Test 5 passed\n", "success"))
     except AssertionError as e:
       print(formatter("AssertionError: ", "bold", "error") + str(e) + "\n")
