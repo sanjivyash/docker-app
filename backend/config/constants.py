@@ -24,4 +24,4 @@ expiry = float(os.getenv("EXPIRY_TIME"))
 # dbname = "movies"
 
 # secret = "secret"
-# expiry = 6000
+# expiry = 600

@@ -5,8 +5,8 @@ from hashlib import blake2b
 class User(BaseModel):
   username: str
   password: str
-  portfolio: Optional[str]
-  tokens: Dict[str, float] = {}
+  token: Optional[str]
+  access: Optional[float]
 
   def hash(self):
     self.password = blake2b(self.password.encode()).hexdigest()

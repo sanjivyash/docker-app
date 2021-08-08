@@ -79,7 +79,7 @@ class Test:
     
     print(f'{title} Accessing a protected route')
     input = { "action": "pause", "load": { "time": 23, "relay": "all" } }
-    output = { "action": "resume", "load": { "time": 23, "relay": "all" } }
+    output = { "origin": self.username, "event": { "action": "resume", "load": { "time": 23, "relay": "all" } }}
     response = self.client.post(url="/auth/check", json=input, headers=self.header)
 
     try:

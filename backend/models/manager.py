@@ -16,29 +16,30 @@ class Event(BaseModel):
 
 
 class ConnectionManager():
-  token: str
-  id: str
-  owner: str
-  members: Dict[str, WebSocket] = {}
-
   def __init__(self, id, token, owner):
     self.id = id
     self.token = token
     self.owner = owner
+    self.members = {}
 
   def __repr__(self):
     return f'id: {self.id}\n owner: {self.owner}'
 
   async def connect(self, username: str, websocket: WebSocket):
-    if username in self.members:
-      await websocket.close()
-      websocket.state.active = False
-      return
-    
     await websocket.accept()
+
+    if username in self.members:
+      await websocket.send_json({ "error": "You've already joined this watch party" })
+      await websocket.close(code=1002)
+      websocket.state.active = False
+      return False
+    
     websocket.state.active = True
-    await self.broadcast(f'{username} has joined the watch party')
+    message = f'{username} has joined the watch party'
+    event = Event(action=Action.chat, load={ "message": message })
+    await self.broadcast(event)
     self.members[username] = websocket
+    return True
 
   async def disconnect(self, username: str, websocket: WebSocket):
     if username not in self.members or not websocket.state.active:
@@ -47,14 +48,16 @@ class ConnectionManager():
     
     websocket.state.active = False
     del self.members[username]
-    await self.broadcast(f'{username} has left the watch party')
+    message = f'{username} has left the watch party'
+    event = Event(action=Action.chat, load={ "message": message })
+    await self.broadcast(event)
 
   async def dissolve(self):
     del self.members[self.owner]
-    await self.broadcast("This watch party has been dissolved by the owner")
     processes = []
     
     for username, websocket in self.members.items():
+      await websocket.send_json({ "error": "Owner has dissolved the watch party" })
       websocket.state.active = False
       processes.append(websocket.close())
       print("Closed connection with " + username)
@@ -63,15 +66,15 @@ class ConnectionManager():
     for process in processes:
       await process
 
-  async def multicast(self, message: Union[Event, str], sender: str):
+  async def multicast(self, event: Event, sender: str):
     if sender not in self.members or not self.members[sender].state.active:
       return
 
     for username, websocket in self.members.items():
       if username != sender and websocket.state.active:
-        await websocket.send_text(f'{sender}: {message}')
+        await websocket.send_json({ "sender": sender, "event": dict(event)})
 
-  async def broadcast(self, message: Union[Event, str]):
+  async def broadcast(self, event: Event):
     for _, websocket in self.members.items():
       if websocket.state.active:
-        await websocket.send_text(message)
+        await websocket.send_json({ "sender": "bot", "event": dict(event)})

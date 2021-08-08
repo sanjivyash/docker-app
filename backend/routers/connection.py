@@ -1,6 +1,7 @@
 from typing import Dict
-from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Depends
-import jwt
+from pydantic import ValidationError
+from fastapi import APIRouter, WebSocket, WebSocketDisconnect, Query
+from hashlib import shake_256
 
 from models import user, manager
 from config import constants
@@ -14,15 +15,22 @@ router = APIRouter(
 managers: Dict[str, manager.ConnectionManager] = {}
 
 @router.websocket("/ws/create/{id}")
-async def create_room(websocket: WebSocket, id: str, person: user.User=Depends(auth.authenticate)):
-  token = jwt.encode({ "username": person.username, "id": id }, constants.secret, algorithm="HS256")
+async def create_room(websocket: WebSocket, id: str, token:str=Query(..., alias="x-auth-token")):
+  person: user.User = auth.authenticate(token)
+  expression = person.username + constants.secret + id
+  token = shake_256(expression.encode()).hexdigest(5)
   
   if token in managers:
-    await websocket.close(code=1002)
-    return
+    try:
+      await websocket.accept()
+      await websocket.send_json({ "error": "Watch Party exists for this video" })
+      await websocket.close(code=1002)
+    except WebSocketDisconnect:
+      pass
+    finally:
+      return
   
   room = manager.ConnectionManager(id, token, person.username)
-  print(f'Room Created\n {room}')
   managers[token] = room
   await room.connect(person.username, websocket)
   await websocket.send_json({ "token": token })
@@ -30,8 +38,12 @@ async def create_room(websocket: WebSocket, id: str, person: user.User=Depends(a
   try:
     while True:
       if websocket.state.active:
-        data = await websocket.receive_text()
-        await room.multicast(data, person.username)
+        try:
+          data = await websocket.receive_json()
+          event = manager.Event(**data)
+          await room.multicast(event, person.username)
+        except ValueError or ValidationError:
+          await websocket.send_json({ "error": "Invalid payload received" })
   except WebSocketDisconnect:
     await room.dissolve()
     print("Room has been dissolved")
@@ -41,19 +53,32 @@ async def create_room(websocket: WebSocket, id: str, person: user.User=Depends(a
 
 
 @router.websocket("/ws/join/{id}")
-async def join_room(websocket: WebSocket, id: str, person: user.User=Depends(auth.authenticate)):
+async def join_room(websocket: WebSocket, id: str, token:str=Query(..., alias="x-auth-token")):
+  person: user.User = auth.authenticate(token)
+  
   if id not in managers:
-    await websocket.close(code=1002)
-    return
+    try:
+      await websocket.accept()
+      await websocket.send_json({ "error": "No such watch party token" })
+      await websocket.close(code=1002)
+    except WebSocketDisconnect:
+      pass
+    finally:
+      return
 
   room = managers[id]
-  await room.connect(person.username, websocket)
+  if not await room.connect(person.username, websocket):
+    return
 
   try:
     while True:
       if websocket.state.active:
-        data = await websocket.receive_text()
-        await room.multicast(data, person.username)
+        try:
+          data = await websocket.receive_json()
+          event = manager.Event(**data)
+          await room.multicast(event, person.username)
+        except ValueError or ValidationError:
+          await websocket.send_json({ "error": "Invalid payload received" })
   except WebSocketDisconnect:
     await room.disconnect(person.username, websocket)
   except AssertionError:

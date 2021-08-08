@@ -7,10 +7,10 @@ from config import constants
 app = FastAPI()
 
 origins = [
-    f'{constants.host}',
-    f'{constants.host}:80',
-    f'{constants.host}:8080',
-    f'{constants.host}:3000',
+    f'http://{constants.host}',
+    f'http://{constants.host}:80',
+    f'http://{constants.host}:8080',
+    f'http://{constants.host}:3000',
   ]
 
 app.add_middleware(

@@ -15,24 +15,26 @@ def authenticate(token: str = Header(..., alias="x-auth-token")):
   except jwt.InvalidTokenError or KeyError or errors.InvalidId:
     raise HTTPException(
         status_code=status.HTTP_401_UNAUTHORIZED,
-        detail=f'Invalid token'
+        detail="Invalid token"
       )
 
   with MongoClient(constants.uri) as client:
     usercoll = client[constants.dbname]["users"]
     document = usercoll.find_one({ "_id": id })
 
-    if document is None or token not in document["tokens"]:
+    if document is None or token != document["token"]:
       raise HTTPException(
           status_code=status.HTTP_401_UNAUTHORIZED,
           detail="Invalid token"
         )
     
-    created_at = document["tokens"][token]
-    if time.time() - created_at > constants.expiry:
+    access = time.time()
+
+    if access - document["access"] > constants.expiry:
       raise HTTPException(
           status_code=status.HTTP_401_UNAUTHORIZED,
           detail="Token expired, please login again"
         )
 
+    document["access"] = access
   return user.User(**document)

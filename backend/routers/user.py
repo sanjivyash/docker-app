@@ -17,7 +17,7 @@ router = APIRouter(
 
 
 @router.post("/signup", response_model=user.UserDisplay, status_code=201)
-def signup(person: user.User):
+def signup(person: user.UserAuth):
   with MongoClient(constants.uri) as client:
     usercoll = client[constants.dbname]["users"]
     
@@ -27,6 +27,7 @@ def signup(person: user.User):
           detail=f'Username {person.username} is already in use'
         )
 
+    person = user.User(**dict(person))
     person.hash()
     usercoll.insert_one(dict(person))
   return person
@@ -35,6 +36,7 @@ def signup(person: user.User):
 @router.post("/login", response_model=Dict[str, str])
 def login(person: user.UserAuth):
   with MongoClient(constants.uri) as client:
+    access = time.time()
     usercoll = client[constants.dbname]["users"]
     document = usercoll.find_one({ "username": person.username })
     
@@ -44,15 +46,19 @@ def login(person: user.UserAuth):
           detail=f'Invalid Credentials'
         )
 
-    token = jwt.encode({ "_id": str(document["_id"]), "time": time.time() }, constants.secret, algorithm="HS256")
-    document["tokens"][token] = time.time()
+    if document["token"] is not None: 
+      if access - document["access"] > constants.expiry:
+        document["token"] = None
+        document["access"] = None
 
-    for token in list(document["tokens"].keys()):
-      created_at = document["tokens"][token]
-      if time.time() - created_at > constants.expiry:
-        del document["tokens"][token] 
-
-    usercoll.replace_one({ "_id": document["_id"]}, document)
+    if document["token"] is None:
+      token = jwt.encode({ "_id": str(document["_id"]), "time": access }, constants.secret, algorithm="HS256")
+      document["token"] = token
+    else:
+      token = document["token"]
+    
+    document["access"] = access
+    usercoll.replace_one({ "_id": document["_id"] }, document)
   return { "x-auth-token": token }
 
 

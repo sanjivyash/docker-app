@@ -8,7 +8,7 @@ router = APIRouter(
     tags=["auth"]
   )
 
-@router.post("/check", response_model=manager.Event)
+@router.post("/check")
 def check_sensitive(event: manager.Event, person: user.User = Depends(auth.authenticate)):
   event.action = manager.Action.resume
-  return event
+  return { "origin": person.username, "event": event }
