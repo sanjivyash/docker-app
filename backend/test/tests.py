@@ -75,16 +75,12 @@ class Test:
   def check(self):
     title = formatter("Test 4", "header", "bold")
     status_err = formatter("incorrect response code", "error")
-    response_err = formatter("incorrect response body", "error")
     
     print(f'{title} Accessing a protected route')
-    input = { "action": "pause", "load": { "time": 23, "relay": "all" } }
-    output = { "origin": self.username, "event": { "action": "resume", "load": { "time": 23, "relay": "all" } }}
-    response = self.client.post(url="/auth/check", json=input, headers=self.header)
+    response = self.client.get(url="/auth/check", headers=self.header)
 
     try:
       assert response.status_code == 200, status_err
-      assert response.json() == output, response_err
       print(formatter("Test 4 passed\n", "success"))
     except AssertionError as e:
       print(formatter("AssertionError: ", "bold", "error") + str(e) + "\n")
