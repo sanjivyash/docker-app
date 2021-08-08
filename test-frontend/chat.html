@@ -7,12 +7,18 @@
   <title>Document</title>
 </head>
 <body>
-  <h1>This is the chat page</h1>
-  <h2 id="token"></h2>
-  <form id="chat-form">
-    <textarea name="msg" id="msg" cols="40" rows="4"></textarea>
-    <button type="submit" id="send-btn">Send</button>
-  </form>
+  <ul>
+    <li><h1>This is the chat page</h1></li>
+    <li><h2 id="token"></h2></li>
+  </ul>
+
+  <div id="container">
+    <form id="chat-form">
+      <textarea name="msg" id="msg" cols="40" rows="4"></textarea> <br>
+      <button type="submit" name="send-btn" id="send-btn">Send</button>
+    </form>
+  </div>
+
   <ul id="messages"></ul>
 
   <style>
@@ -22,7 +28,17 @@
     li, textarea {
       white-space: pre-wrap;
     }
+    #container {
+      margin: auto;
+      width: 70vw;
+    }
+    #send-btn {
+      background-color: #e44a4a;
+      width: 10em;
+      height: 2em;
+    }
   </style>
   <script type="module" src="chat.js"></script>
 </body>
 </html>
+

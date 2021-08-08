@@ -8,18 +8,9 @@ const attr = sessionStorage.getItem("attr");
 const messages = document.getElementById("messages");
 const form = document.getElementById("chat-form");
 const textbox = form.elements["msg"];
+const submitBtn = form.elements["send-btn"];
 
-const response = await fetch("http://127.0.0.1:8000/auth/check", {
-  method: "GET",
-  mode: "cors",
-  headers: { "x-auth-token": token },
-  redirect: "follow"
-});
-
-if(response.status !== 200) {
-  alert("Token expired, please login again");
-  window.location = "./login.html";
-}
+console.log(submitBtn);
 
 if(token == null) {
   window.location = "./login.html";
@@ -28,17 +19,31 @@ if(token == null) {
   console.log(header);
 }
 
+const response = await fetch("http://127.0.0.1:8000/auth/check", {
+  method: "GET",
+  mode: "cors",
+  headers: header,
+  redirect: "follow"
+});
+
+if(response.status !== 200) {
+  alert("Token expired, please login again");
+  window.location = "./login.html";
+}
+
 if(type === "url") {
   ws = new WebSocket(`ws://localhost:8000/ws/create/${attr}?x-auth-token=${token}`);
-  ws.onopen = () => console.log("room created");
 } else if(type === "token") {
   ws = new WebSocket(`ws://localhost:8000/ws/join/${attr}?x-auth-token=${token}`);
-  ws.onopen = () => console.log("joined room");
 } else {
   window.location = "./login.html";
 }
 
-ws.addEventListener("message", async(e) => {
+ws.addEventListener("open", () => {
+  submitBtn.style.backgroundColor = "#4ae44a";
+})
+
+ws.addEventListener("message", async e => {
   const response = JSON.parse(e.data);
   
   if(response.error) {
@@ -73,7 +78,7 @@ const displayMessage = () => {
   form.elements["msg"].value = "";
   
   const node = document.createElement('li');
-  node.innerHTML = `<b>You</b> : ${message}`;
+  node.innerHTML = `<b>you</b> : ${message}`;
   messages.appendChild(node);
 
   const event = {
