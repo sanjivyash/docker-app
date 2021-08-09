@@ -10,8 +10,6 @@ const form = document.getElementById("chat-form");
 const textbox = form.elements["msg"];
 const submitBtn = form.elements["send-btn"];
 
-console.log(submitBtn);
-
 if(token == null) {
   window.location = "./login.html";
 } else {
@@ -41,7 +39,7 @@ if(type === "url") {
 
 ws.addEventListener("open", () => {
   submitBtn.style.backgroundColor = "#4ae44a";
-})
+});
 
 ws.addEventListener("message", async e => {
   const response = JSON.parse(e.data);
@@ -49,6 +47,7 @@ ws.addEventListener("message", async e => {
   if(response.error) {
     alert(response.error);
     window.location = "./login.html";
+    return;
   }
 
   if(response.token) {
