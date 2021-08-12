@@ -85,7 +85,7 @@ const displayMessage = () => {
     load: { message }
   };
   ws.send(JSON.stringify(event));
-};
+}
 
 textbox.addEventListener("keydown", e => {
   if(e.keyCode == 13 && e.shiftKey) {
